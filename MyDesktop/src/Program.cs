@@ -12,7 +12,7 @@ namespace MyDesktop
     {
         private static void Main(string[] args)
         {
-            Console.WriteLine("MyDesktop-v1.1");
+            Console.WriteLine($"{ProgramInfo.Name}-v{ProgramInfo.Version}");
 
             // Make sure it's really the assembly's location. Otherwise it'll break when run as a service.
             var location = Path.GetDirectoryName(typeof(Program).Assembly.Location);
@@ -24,18 +24,18 @@ namespace MyDesktop
                     .AddJsonFile("appsettings.json")
                     .Build();
 
-            SetBackgroundColor(configuration["BackgroundColor"]);
-            SetWallpaper(configuration["WallpaperPath"]);
+            SetDesktopBackgroundColor(configuration.DesktopBackgroundColor());
+            SetDesktopWallpaper(configuration.DesktopWallpaperPath());
+            SetLockScreenWallpaper(configuration.LockScreenWallpaperPath());
 
-
-#if !DEBUG
+        #if !DEBUG
             Console.WriteLine("Enjoy ;-)");
             Console.WriteLine("[Press any key to exit]");
             Console.ReadKey();
-#endif
+        #endif
         }
 
-        private static void SetBackgroundColor(string color)
+        private static void SetDesktopBackgroundColor(string color)
         {
             Console.WriteLine($"Background color: ({color})");
             var elements = new[] { User32.COLOR_DESKTOP };
@@ -43,10 +43,40 @@ namespace MyDesktop
             User32.SetSysColors(elements.Length, elements, colors);
         }
 
-        private static void SetWallpaper(string path)
+        private static void SetDesktopWallpaper(string path)
         {
             Console.WriteLine($"Wallpaper: '{path}'");
             User32.SystemParametersInfo(User32.SPI_SETDESKWALLPAPER, 0, path, SPIF.SPIF_UPDATEINIFILE | SPIF.SPIF_SENDCHANGE);
         }
-    }    
+
+        private static void SetLockScreenWallpaper(string path)
+        {
+            
+        }
+    }
+
+    public static class ProgramInfo
+    {
+        public const string Name = "MyDesktop";
+
+        public const string Version = "1.2";
+    }
+
+    public static class ConfigurationRootExtensions
+    {
+        public static string DesktopWallpaperPath(this IConfigurationRoot configurationRoot)
+        {
+            return configurationRoot[nameof(DesktopWallpaperPath)];
+        }
+        
+        public static string DesktopBackgroundColor(this IConfigurationRoot configurationRoot)
+        {
+            return configurationRoot[nameof(DesktopBackgroundColor)];
+        }
+        
+        public static string LockScreenWallpaperPath(this IConfigurationRoot configurationRoot)
+        {
+            return configurationRoot[nameof(LockScreenWallpaperPath)];
+        }
+    }
 }
