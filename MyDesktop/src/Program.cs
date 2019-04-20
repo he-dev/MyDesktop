@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Security.AccessControl;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Win32;
 
 // Configuration in ASP.NET Core
 // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/index?view=aspnetcore-2.1&tabs=basicconfiguration
@@ -13,6 +16,8 @@ namespace MyDesktop
         private static void Main(string[] args)
         {
             Console.WriteLine($"{ProgramInfo.Name}-v{ProgramInfo.Version}");
+            
+            SetLockScreenWallpaper("");
 
             // Make sure it's really the assembly's location. Otherwise it'll break when run as a service.
             var location = Path.GetDirectoryName(typeof(Program).Assembly.Location);
@@ -28,11 +33,11 @@ namespace MyDesktop
             SetDesktopWallpaper(configuration.DesktopWallpaperPath());
             SetLockScreenWallpaper(configuration.LockScreenWallpaperPath());
 
-        #if !DEBUG
+#if !DEBUG
             Console.WriteLine("Enjoy ;-)");
             Console.WriteLine("[Press any key to exit]");
             Console.ReadKey();
-        #endif
+#endif
         }
 
         private static void SetDesktopBackgroundColor(string color)
@@ -51,7 +56,15 @@ namespace MyDesktop
 
         private static void SetLockScreenWallpaper(string path)
         {
-            
+            // HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Personalization
+
+            var personalization = @"SOFTWARE\Policies\Microsoft\Windows\Personalization";
+
+            using (var personalizationSubKey = Registry.LocalMachine.OpenSubKey(personalization, RegistryRights.WriteKey))
+            {
+                var lockScreenImage = personalizationSubKey.GetValue("LockScreenImage");
+                personalizationSubKey.SetValue("LockScreenImage", lockScreenImage);
+            }
         }
     }
 
@@ -68,12 +81,12 @@ namespace MyDesktop
         {
             return configurationRoot[nameof(DesktopWallpaperPath)];
         }
-        
+
         public static string DesktopBackgroundColor(this IConfigurationRoot configurationRoot)
         {
             return configurationRoot[nameof(DesktopBackgroundColor)];
         }
-        
+
         public static string LockScreenWallpaperPath(this IConfigurationRoot configurationRoot)
         {
             return configurationRoot[nameof(LockScreenWallpaperPath)];
